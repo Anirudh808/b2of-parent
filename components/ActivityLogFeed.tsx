@@ -233,23 +233,38 @@ export default function ActivityLogFeed({ logs, loading }: ActivityLogFeedProps)
       {lightboxImage && (
         <div
           onClick={() => setLightboxImage(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md cursor-zoom-out animate-fade-in"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md cursor-zoom-out animate-fade-in"
         >
-          <div className="relative max-w-2xl max-h-[80vh] rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightboxImage}
-              alt="Security Evidence Lightbox"
-              className="w-full h-full object-contain"
-            />
-            <button
-              onClick={() => setLightboxImage(null)}
-              className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white p-2 rounded-full shadow-lg"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          {/* Floating Close Button */}
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 z-51 p-2.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/50 backdrop-blur-sm cursor-pointer shadow-lg transition-all hover:scale-105 active:scale-95"
+            aria-label="Close lightbox"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Image Container */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex flex-col items-center max-w-[95vw] md:max-w-3xl animate-scale-in"
+          >
+            <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900/50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={lightboxImage}
+                alt="Security Evidence"
+                className="w-auto h-auto max-w-[90vw] max-h-[70vh] md:max-w-3xl md:max-h-[75vh] object-contain rounded-2xl block"
+              />
+            </div>
+            
+            {/* Caption Info */}
+            <div className="mt-4 px-4 py-2 rounded-full bg-slate-900/90 border border-slate-800/80 backdrop-blur-md shadow-lg flex items-center gap-2 text-[11px] font-semibold text-slate-300 tracking-wide select-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-ring"></span>
+              Security Photo Evidence
+            </div>
           </div>
         </div>
       )}
