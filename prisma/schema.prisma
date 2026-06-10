@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  PARENT
+}
+
+model Kid {
+  id                    String          @id @default(uuid())
+  firstName             String
+  lastName              String
+  age                   Int
+  gender                String
+  parentName            String
+  parentEmail           String
+  role                  Role            @default(PARENT)
+  authorizedToPickup    String
+  parentPhone           String
+  emergencyContactName  String
+  emergencyContactPhone String
+  notes                 String          @default("")
+  checkedIn             Boolean         @default(false)
+  lastStatusChange      DateTime        @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  logs                  CheckInOutLog[]
+
+  @@index([parentEmail])
+}
+
+model CheckInOutLog {
+  id          String   @id @default(uuid())
+  kidId       String
+  kidName     String
+  parentEmail String
+  parentName  String
+  type        String // 'checkin' | 'checkout'
+  timestamp   DateTime @default(now())
+  photoUrl    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  kid         Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+
+  @@index([kidId])
+  @@index([parentEmail])
+}
+
+model ParentPasscode {
+  id          String    @id @default(uuid())
+  parentEmail String    @unique
+  passcode    String
+  otp         String?
+  otpExpiry   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AdminUser {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  password  String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
