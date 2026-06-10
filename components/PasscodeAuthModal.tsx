@@ -116,7 +116,11 @@ export default function PasscodeAuthModal({
     setCameraError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 400, height: 300, facingMode: "user" },
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: "user"
+        },
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -196,14 +200,15 @@ export default function PasscodeAuthModal({
   const captureWebcamSnapshot = (): string | null => {
     if (!videoRef.current || !cameraActive) return null;
     try {
+      const video = videoRef.current;
       const canvas = document.createElement("canvas");
-      canvas.width = 400;
-      canvas.height = 300;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.translate(canvas.width, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         return canvas.toDataURL("image/jpeg", 0.85);
       }
       return null;
@@ -462,16 +467,32 @@ export default function PasscodeAuthModal({
     }
   }, [selectedKid]);
 
-  // Clean up states on modal close/reset
+  // Clean up and reset modal states whenever activeAction or selectedKid changes
   useEffect(() => {
-    if (!selectedKid && activeAction !== "admin") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShowEmailVerificationScreen(false);
-      setEnteredEmail("");
-      setEmailError("");
-      setEnteredResetEmail("");
-      setForgotError("");
-    }
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setEnteredPasscode("");
+    setPasscodeError("");
+    setPasscodeLoading(false);
+    
+    setShowEmailVerificationScreen(false);
+    setEnteredEmail("");
+    setEmailError("");
+    setEmailLoading(false);
+    
+    setShowOtpModal(false);
+    setOtpCode("");
+    setNewPasscode("");
+    setOtpError("");
+    setOtpLoading(false);
+    
+    setShowForgotModal(false);
+    setForgotOtp("");
+    setForgotNewPasscode("");
+    setForgotStep(1);
+    setForgotError("");
+    setForgotLoading(false);
+    setEnteredResetEmail("");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [selectedKid, activeAction]);
 
   // Handle webcam stream attachment

@@ -18,7 +18,7 @@ export default function WebcamCapture({
         Security Webcam Feed
       </span>
       
-      <div className="relative w-48 h-36 bg-slate-900 rounded-xl overflow-hidden shadow-inner border border-slate-200 dark:border-slate-700">
+      <div className="relative w-44 h-44 bg-slate-900 rounded-full overflow-hidden shadow-inner border-2 border-indigo-500/30 dark:border-indigo-500/20">
         <video
           ref={videoRef}
           className="w-full h-full object-cover scale-x-[-1]"
@@ -26,7 +26,7 @@ export default function WebcamCapture({
           playsInline
         />
         {!cameraActive && (
-          <div className="absolute inset-0 flex items-center justify-center text-center p-3">
+          <div className="absolute inset-0 flex items-center justify-center text-center p-4">
             <span className="text-[10px] text-slate-400 font-semibold">
               {cameraError || "Initializing security camera..."}
             </span>

@@ -28,10 +28,97 @@ export default function ActivityLogFeed({ logs, loading }: ActivityLogFeedProps)
     );
   }
 
-  if (logs.length === 0) {
+  // Grouping logs into pairs chronologically per kid
+  const groupLogsIntoPairs = (logsList: ActivityLog[]) => {
+    const groupedByKid: { [kidId: string]: { kidName: string; logs: ActivityLog[] } } = {};
+    
+    // Sort oldest to newest to pair chronologically
+    const sortedLogs = [...logsList].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
+    for (const log of sortedLogs) {
+      if (!groupedByKid[log.kidId]) {
+        groupedByKid[log.kidId] = {
+          kidName: log.kidName,
+          logs: [],
+        };
+      }
+      groupedByKid[log.kidId].logs.push(log);
+    }
+    
+    interface PairedLog {
+      id: string;
+      kidId: string;
+      kidName: string;
+      checkIn: ActivityLog | null;
+      checkOut: ActivityLog | null;
+      latestTimestamp: string;
+    }
+    
+    const pairedList: PairedLog[] = [];
+    
+    for (const kidId of Object.keys(groupedByKid)) {
+      const { kidName, logs: kidLogs } = groupedByKid[kidId];
+      let currentPair: { checkIn: ActivityLog | null; checkOut: ActivityLog | null } = { checkIn: null, checkOut: null };
+      
+      for (const log of kidLogs) {
+        if (log.type === "checkin") {
+          if (currentPair.checkIn) {
+            pairedList.push({
+              id: `${kidId}_in_${currentPair.checkIn.id}`,
+              kidId,
+              kidName,
+              checkIn: currentPair.checkIn,
+              checkOut: null,
+              latestTimestamp: currentPair.checkIn.timestamp,
+            });
+          }
+          currentPair = { checkIn: log, checkOut: null };
+        } else if (log.type === "checkout") {
+          if (currentPair.checkIn) {
+            pairedList.push({
+              id: `${kidId}_pair_${currentPair.checkIn.id}_${log.id}`,
+              kidId,
+              kidName,
+              checkIn: currentPair.checkIn,
+              checkOut: log,
+              latestTimestamp: log.timestamp,
+            });
+            currentPair = { checkIn: null, checkOut: null };
+          } else {
+            pairedList.push({
+              id: `${kidId}_out_${log.id}`,
+              kidId,
+              kidName,
+              checkIn: null,
+              checkOut: log,
+              latestTimestamp: log.timestamp,
+            });
+          }
+        }
+      }
+      
+      if (currentPair.checkIn) {
+        pairedList.push({
+          id: `${kidId}_in_${currentPair.checkIn.id}`,
+          kidId,
+          kidName,
+          checkIn: currentPair.checkIn,
+          checkOut: null,
+          latestTimestamp: currentPair.checkIn.timestamp,
+        });
+      }
+    }
+    
+    // Sort so newest activity shows first
+    return pairedList.sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+  };
+
+  const pairedLogs = groupLogsIntoPairs(logs);
+
+  if (pairedLogs.length === 0) {
     return (
       <div className="py-20 text-center text-slate-400 font-semibold text-sm">
-        No check-in/out records found yet.
+        No check-in/out records found for this date.
       </div>
     );
   }
@@ -39,57 +126,102 @@ export default function ActivityLogFeed({ logs, loading }: ActivityLogFeedProps)
   return (
     <>
       <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
-        {logs.map((log) => (
-          <div key={log.id} className="p-5 flex gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all items-start animate-fade-in">
-            
-            {/* Photo Thumbnail Button */}
-            <button
-              onClick={() => setLightboxImage(log.photoUrl)}
-              className="relative group w-14 h-14 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm flex-shrink-0 cursor-zoom-in"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={log.photoUrl}
-                alt="Evidence"
-                className="w-full h-full object-cover transition-transform group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+        {pairedLogs.map((pair) => (
+          <div key={pair.id} className="p-5 flex flex-col md:flex-row gap-4 hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-all items-stretch justify-between animate-fade-in border-b border-slate-100 dark:border-slate-800">
+            {/* Student info */}
+            <div className="flex flex-col justify-between py-1 min-w-[140px] gap-1">
+              <div>
+                <span className="block font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                  {pair.kidName}
+                </span>
+                <span className="block text-[10px] text-slate-400 font-medium mt-0.5">
+                  ID: {pair.kidId.slice(0, 8)}...
+                </span>
               </div>
-            </button>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                {pair.checkIn ? (
+                  <span className="block font-semibold">Email: {pair.checkIn.parentEmail}</span>
+                ) : pair.checkOut ? (
+                  <span className="block font-semibold">Email: {pair.checkOut.parentEmail}</span>
+                ) : null}
+              </div>
+            </div>
 
-            <div className="flex-1 space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="font-extrabold text-xs text-slate-900 dark:text-slate-100">
-                  {log.kidName}
-                </span>
-                <span className="text-[10px] text-slate-400 font-normal">
-                  {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {log.type === "checkin" ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-                    Check In
-                  </span>
+            {/* Timings columns */}
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Check In Block */}
+              <div className="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 p-3 rounded-xl flex gap-3 items-center">
+                {pair.checkIn ? (
+                  <>
+                    <button
+                      onClick={() => setLightboxImage(pair.checkIn!.photoUrl)}
+                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs flex-shrink-0 cursor-zoom-in"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={pair.checkIn.photoUrl}
+                        alt="Check In Evidence"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 mb-1">
+                        Checked In
+                      </span>
+                      <span className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                        {new Date(pair.checkIn.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="block text-[9px] text-slate-400 truncate font-medium">
+                        by {pair.checkIn.parentName}
+                      </span>
+                    </div>
+                  </>
                 ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
-                    Check Out
-                  </span>
+                  <div className="flex-1 text-center py-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">No Check In</span>
+                  </div>
                 )}
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  by {log.parentName}
-                </span>
               </div>
 
-              <div className="text-[10px] text-slate-400 font-normal">
-                Email: {log.parentEmail}
-              </div>
-              <div className="text-[9px] text-slate-400 font-normal">
-                {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+              {/* Check Out Block */}
+              <div className={`p-3 rounded-xl flex gap-3 items-center ${
+                pair.checkOut
+                  ? "bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60"
+                  : "bg-indigo-50/20 dark:bg-indigo-950/5 border border-dashed border-indigo-200/50 dark:border-indigo-800/20"
+              }`}>
+                {pair.checkOut ? (
+                  <>
+                    <button
+                      onClick={() => setLightboxImage(pair.checkOut!.photoUrl)}
+                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs flex-shrink-0 cursor-zoom-in"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={pair.checkOut.photoUrl}
+                        alt="Check Out Evidence"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 mb-1">
+                        Checked Out
+                      </span>
+                      <span className="block text-[10px] font-extrabold text-slate-700 dark:text-slate-200">
+                        {new Date(pair.checkOut.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="block text-[9px] text-slate-400 truncate font-medium">
+                        by {pair.checkOut.parentName}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 text-center py-2 flex flex-col items-center justify-center">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                      <span className="w-1 h-1 rounded-full bg-indigo-500 animate-ping"></span>
+                      Still at Academy
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

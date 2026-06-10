@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import StatCards from "./StatCards";
 import KidTable from "./KidTable";
 import ActivityLogFeed from "./ActivityLogFeed";
@@ -50,6 +50,16 @@ export default function AdminDashboardView({
   onAddChildClick,
   onEditChildClick,
 }: AdminDashboardViewProps) {
+  const todayDateString = React.useMemo(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const [logDateFilter, setLogDateFilter] = useState<string>(todayDateString);
+
   // Admin filter helper
   const filteredAdminKids = adminKids.filter((k) => {
     if (adminFilter === "in") return k.checkedIn;
@@ -57,8 +67,20 @@ export default function AdminDashboardView({
     return true;
   });
 
+  const filteredLogs = adminLogs.filter((log) => {
+    if (!logDateFilter) return true;
+    const logDate = new Date(log.timestamp);
+    const localYear = logDate.getFullYear();
+    const localMonth = String(logDate.getMonth() + 1).padStart(2, "0");
+    const localDay = String(logDate.getDate()).padStart(2, "0");
+    const logDateString = `${localYear}-${localMonth}-${localDay}`;
+    return logDateString === logDateFilter;
+  });
+
+  const [activeTab, setActiveTab] = useState<"students" | "logs">("students");
+
   return (
-    <div className="w-full flex flex-col gap-10 animate-fade-in">
+    <div className="w-full flex flex-col gap-8 md:gap-10 animate-fade-in">
       {/* Top counters */}
       <StatCards
         totalKids={adminKids.length}
@@ -67,10 +89,36 @@ export default function AdminDashboardView({
         totalLogs={adminLogs.length}
       />
 
-      {/* Split Screen Layout */}
+      {/* Mobile Tab Control (Visible only on mobile/tablet viewports) */}
+      <div className="flex md:hidden border-b border-slate-200 dark:border-slate-800 p-1 bg-slate-100 dark:bg-slate-900/50 rounded-xl gap-1">
+        <button
+          onClick={() => setActiveTab("students")}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            activeTab === "students"
+              ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-850"
+          }`}
+        >
+          Registered Students
+        </button>
+        <button
+          onClick={() => setActiveTab("logs")}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            activeTab === "logs"
+              ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-855"
+          }`}
+        >
+          Activity Logs
+        </button>
+      </div>
+
+      {/* Split Screen / Tabbed Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Kids Listing */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div className={`lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl overflow-hidden flex-col ${
+          activeTab === "students" ? "flex" : "hidden md:flex"
+        }`}>
           <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
             <h3 className="font-extrabold text-lg flex items-center gap-2">
               Registered Students
@@ -135,11 +183,32 @@ export default function AdminDashboardView({
         </div>
 
         {/* Right Column: Live Logs Feed */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl overflow-hidden flex flex-col">
-          <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-            <h3 className="font-extrabold text-lg">
+        <div className={`lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl overflow-hidden flex-col ${
+          activeTab === "logs" ? "flex" : "hidden md:flex"
+        }`}>
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">
               Live Security Activity Logs
             </h3>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={logDateFilter}
+                onChange={(e) => setLogDateFilter(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer text-slate-700 dark:text-slate-200"
+              />
+              {logDateFilter !== todayDateString && (
+                <button
+                  onClick={() => setLogDateFilter(todayDateString)}
+                  className="text-xs text-slate-400 hover:text-indigo-500 font-bold transition-all flex items-center gap-0.5 cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Today
+                </button>
+              )}
+            </div>
           </div>
 
           {adminLoading ? (
@@ -149,7 +218,7 @@ export default function AdminDashboardView({
             </div>
           ) : (
             <ActivityLogFeed
-              logs={adminLogs}
+              logs={filteredLogs}
               loading={adminLoading}
             />
           )}

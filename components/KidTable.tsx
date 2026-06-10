@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 interface Kid {
   id: string;
@@ -30,6 +30,15 @@ export default function KidTable({
   onViewProfile,
   onCheckInOut,
 }: KidTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setCurrentPage(1);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [kids]);
+
   if (kids.length === 0) {
     return (
       <div className="py-12 text-center text-slate-400 font-semibold text-sm">
@@ -38,11 +47,14 @@ export default function KidTable({
     );
   }
 
+  const totalPages = Math.ceil(kids.length / itemsPerPage);
+  const displayedKids = kids.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <>
       {/* Mobile Card Grid (Visible on mobile, hidden on tablet and larger) */}
       <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
-        {kids.map((kid) => (
+        {displayedKids.map((kid) => (
           <div key={kid.id} className="p-5 flex flex-col gap-4 hover:bg-slate-50/20 dark:hover:bg-slate-800/10 transition-all animate-fade-in">
             {/* Header: Student Name and Status */}
             <div className="flex justify-between items-start">
@@ -119,7 +131,7 @@ export default function KidTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-bold">
-                {kids.map((kid) => (
+                {displayedKids.map((kid) => (
                   <tr key={kid.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
                     <td className="px-6 py-4">
                       <span className="block text-slate-955 dark:text-slate-100">{kid.firstName} {kid.lastName}</span>
@@ -170,7 +182,7 @@ export default function KidTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm font-medium">
-                {kids.map((kid) => (
+                {displayedKids.map((kid) => (
                   <tr key={kid.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
                     <td className="px-6 py-5">
                       <span className="font-bold text-slate-900 dark:text-slate-100">
@@ -224,6 +236,29 @@ export default function KidTable({
           )}
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 bg-slate-50/25">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Previous
+          </button>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </>
   );
 }
