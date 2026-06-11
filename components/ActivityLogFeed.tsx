@@ -179,7 +179,7 @@ export default function ActivityLogFeed({
                   <>
                     <button
                       onClick={() => setLightboxImage(pair.checkIn!.photoUrl)}
-                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs flex-shrink-0 cursor-zoom-in"
+                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs shrink-0 cursor-zoom-in"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -224,7 +224,7 @@ export default function ActivityLogFeed({
                   <>
                     <button
                       onClick={() => setLightboxImage(pair.checkOut!.photoUrl)}
-                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs flex-shrink-0 cursor-zoom-in"
+                      className="relative group w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs shrink-0 cursor-zoom-in"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
