@@ -8,7 +8,7 @@ const smtpPort = Number(process.env.SMTP_PORT) || 587;
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 const smtpSecure = process.env.SMTP_SECURE === "true"; // true for 465, false for other ports
-const emailFrom = process.env.SMTP_FROM || '"AcaCheck Security" <noreply@acacheck.com>';
+const emailFrom = process.env.SMTP_FROM || '"B2OF SafePass Security" <noreply@b2of-safepass.com>';
 
 const hasSmtpConfig = !!smtpPass;
 
@@ -83,12 +83,12 @@ export async function POST(request: NextRequest) {
                 await transporter.sendMail({
                     from: emailFrom,
                     to: normalizedEmail,
-                    subject: "AcaCheck Child Safety OTP Verification Code",
+                    subject: "B2OF SafePass Child Safety OTP Verification Code",
                     text: `Your academy check-in/out verification code is: ${otp}. It will expire in 5 minutes.`,
                     html: `
                         <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; color: #1e293b; background-color: #ffffff;">
                             <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px; font-weight: bold; color: #0f172a;">AcaCheck Security</span>
+                                <span style="font-size: 18px; font-weight: bold; color: #0f172a;">B2OF SafePass Security</span>
                             </div>
                             <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0;">Verify Parent Identity</h2>
                             <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">

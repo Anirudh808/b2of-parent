@@ -72,11 +72,11 @@ export default function App() {
       <header className="sticky top-0 z-40 w-full glass shadow-sm py-4 px-6 md:px-12 flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xl shadow-md tracking-wider">
-            A
+            B
           </div>
           <div>
             <span className="font-bold text-xl tracking-tight bg-linear-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-              AcaCheck
+              B2OF SafePass
             </span>
             <span className="text-xs block text-slate-500 dark:text-slate-400 font-medium">Academy Safety Portal</span>
           </div>
@@ -151,7 +151,7 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="w-full border-t border-slate-200 dark:border-slate-900 py-6 text-center text-xs text-slate-400 mt-auto bg-white/40 dark:bg-slate-900/40 font-medium">
-        © 2026 AcaCheck Academy Child Safety Pickup Portal. All Rights Reserved.
+        © 2026 B2OF Academy Child Safety Pickup Portal. All Rights Reserved.
       </footer>
 
       {/* --- MODAL DIALOGS --- */}
