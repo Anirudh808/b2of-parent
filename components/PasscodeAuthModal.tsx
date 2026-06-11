@@ -17,6 +17,8 @@ interface Kid {
   notes: string;
   checkedIn: boolean;
   lastStatusChange: string;
+  registrationStart?: string;
+  registrationEnd?: string;
 }
 
 interface PasscodeAuthModalProps {

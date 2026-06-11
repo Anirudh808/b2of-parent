@@ -15,6 +15,8 @@ interface Kid {
   notes: string;
   checkedIn: boolean;
   lastStatusChange: string;
+  registrationStart?: string;
+  registrationEnd?: string;
 }
 
 interface KidProfileModalProps {
@@ -33,6 +35,37 @@ export default function KidProfileModal({
   const [editingKid, setEditingKid] = useState<Partial<Kid>>({});
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
+
+  const formatDateForInput = (dateStr?: string) => {
+    if (!dateStr) return "";
+    return dateStr.split("T")[0];
+  };
+
+  const isUnchanged = () => {
+    if (!kid) return true;
+    const fields: (keyof Kid)[] = [
+      "firstName",
+      "lastName",
+      "age",
+      "gender",
+      "parentName",
+      "parentEmail",
+      "authorizedToPickup",
+      "parentPhone",
+      "emergencyContactName",
+      "emergencyContactPhone",
+      "notes",
+      "registrationStart",
+      "registrationEnd"
+    ];
+    return fields.every((field) => {
+      const originalValue = kid[field];
+      const editingValue = editingKid[field];
+      const normOriginal = originalValue === null || originalValue === undefined ? "" : originalValue;
+      const normEditing = editingValue === null || editingValue === undefined ? "" : editingValue;
+      return String(normOriginal) === String(normEditing);
+    });
+  };
 
   useEffect(() => {
     if (kid) {
@@ -210,6 +243,27 @@ export default function KidProfileModal({
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-slate-100 dark:border-slate-800 pt-5">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Registration Start Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(editingKid.registrationStart)}
+                onChange={(e) => setEditingKid({ ...editingKid, registrationStart: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Registration End Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(editingKid.registrationEnd)}
+                onChange={(e) => setEditingKid({ ...editingKid, registrationEnd: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Medical or General Notes</label>
             <textarea
@@ -236,7 +290,7 @@ export default function KidProfileModal({
             </button>
             <button
               type="submit"
-              disabled={editLoading}
+              disabled={editLoading || isUnchanged()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
               {editLoading ? (

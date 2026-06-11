@@ -2,8 +2,23 @@ const { Pool } = require("pg");
 const crypto = require("crypto");
 require("dotenv").config({ path: ".env.local" });
 
+const cleanConnectionString = (url) => {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.delete("sslmode");
+    return parsed.toString();
+  } catch (e) {
+    return url;
+  }
+};
+
+const url = cleanConnectionString(process.env.DATABASE_URL);
+const isLocalDb = process.env.DATABASE_URL?.includes("localhost") || process.env.DATABASE_URL?.includes("127.0.0.1");
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: url,
+  ssl: isLocalDb ? false : { rejectUnauthorized: false }
 });
 
 function hashPasscode(passcode) {

@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'PARENT');
+
 -- CreateTable
 CREATE TABLE "Kid" (
     "id" TEXT NOT NULL,
@@ -7,6 +10,7 @@ CREATE TABLE "Kid" (
     "gender" TEXT NOT NULL,
     "parentName" TEXT NOT NULL,
     "parentEmail" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'PARENT',
     "authorizedToPickup" TEXT NOT NULL,
     "parentPhone" TEXT NOT NULL,
     "emergencyContactName" TEXT NOT NULL,
@@ -14,6 +18,8 @@ CREATE TABLE "Kid" (
     "notes" TEXT NOT NULL DEFAULT '',
     "checkedIn" BOOLEAN NOT NULL DEFAULT false,
     "lastStatusChange" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "registrationStart" TIMESTAMP(3),
+    "registrationEnd" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -49,6 +55,19 @@ CREATE TABLE "ParentPasscode" (
     CONSTRAINT "ParentPasscode_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "AdminUser" (
+    "id" TEXT NOT NULL,
+    "fullName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'ADMIN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AdminUser_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE INDEX "Kid_parentEmail_idx" ON "Kid"("parentEmail");
 
@@ -60,6 +79,9 @@ CREATE INDEX "CheckInOutLog_parentEmail_idx" ON "CheckInOutLog"("parentEmail");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ParentPasscode_parentEmail_key" ON "ParentPasscode"("parentEmail");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AdminUser_email_key" ON "AdminUser"("email");
 
 -- AddForeignKey
 ALTER TABLE "CheckInOutLog" ADD CONSTRAINT "CheckInOutLog_kidId_fkey" FOREIGN KEY ("kidId") REFERENCES "Kid"("id") ON DELETE CASCADE ON UPDATE CASCADE;

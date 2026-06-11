@@ -35,6 +35,8 @@ export default function App() {
     setShowCreateKidModal,
     toast,
     showToast,
+    activeSearchFirst,
+    activeSearchLast,
     handleParentSearch,
     initiateKidAction,
     handleAuthSuccess,
@@ -121,6 +123,8 @@ export default function App() {
             setSearchFirst={setSearchFirst}
             searchLast={searchLast}
             setSearchLast={setSearchLast}
+            activeSearchFirst={activeSearchFirst}
+            activeSearchLast={activeSearchLast}
             parentKids={parentKids}
             searchPerformed={searchPerformed}
             parentSearchLoading={parentSearchLoading}

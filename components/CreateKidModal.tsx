@@ -23,6 +23,8 @@ export default function CreateKidModal({
     emergencyContactName: "",
     emergencyContactPhone: "",
     notes: "",
+    registrationStart: "",
+    registrationEnd: "",
   });
 
   const [createLoading, setCreateLoading] = useState(false);
@@ -57,6 +59,8 @@ export default function CreateKidModal({
           emergencyContactName: "",
           emergencyContactPhone: "",
           notes: "",
+          registrationStart: "",
+          registrationEnd: "",
         });
         onCreateSuccess();
         onClose();
@@ -210,6 +214,27 @@ export default function CreateKidModal({
                 value={newKidForm.emergencyContactPhone}
                 onChange={(e) => setNewKidForm({ ...newKidForm, emergencyContactPhone: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-slate-100 dark:border-slate-800 pt-5">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Registration Start Date</label>
+              <input
+                type="date"
+                value={newKidForm.registrationStart}
+                onChange={(e) => setNewKidForm({ ...newKidForm, registrationStart: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Registration End Date</label>
+              <input
+                type="date"
+                value={newKidForm.registrationEnd}
+                onChange={(e) => setNewKidForm({ ...newKidForm, registrationEnd: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>

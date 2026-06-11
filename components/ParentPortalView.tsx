@@ -16,6 +16,8 @@ interface Kid {
   notes: string;
   checkedIn: boolean;
   lastStatusChange: string;
+  registrationStart?: string;
+  registrationEnd?: string;
 }
 
 interface ParentPortalViewProps {
@@ -23,6 +25,8 @@ interface ParentPortalViewProps {
   setSearchFirst: (val: string) => void;
   searchLast: string;
   setSearchLast: (val: string) => void;
+  activeSearchFirst: string;
+  activeSearchLast: string;
   parentKids: Kid[];
   searchPerformed: boolean;
   parentSearchLoading: boolean;
@@ -35,6 +39,8 @@ export default function ParentPortalView({
   setSearchFirst,
   searchLast,
   setSearchLast,
+  activeSearchFirst,
+  activeSearchLast,
   parentKids,
   searchPerformed,
   parentSearchLoading,
@@ -121,7 +127,7 @@ export default function ParentPortalView({
               </div>
               <h4 className="font-bold text-slate-700 dark:text-slate-300">No Children Found</h4>
               <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
-                We couldn&apos;t find any student matching exactly <strong>&ldquo;{searchFirst} {searchLast}&rdquo;</strong>. Please verify spelling or contact academy administration.
+                We couldn&apos;t find any student matching exactly <strong>&ldquo;{activeSearchFirst} {activeSearchLast}&rdquo;</strong>. Please verify spelling or contact academy administration.
               </p>
             </div>
           ) : (

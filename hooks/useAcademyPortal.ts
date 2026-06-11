@@ -17,6 +17,8 @@ export interface Kid {
   lastStatusChange: string;
   createdAt?: string;
   updatedAt?: string;
+  registrationStart?: string;
+  registrationEnd?: string;
 }
 
 export interface ActivityLog {
@@ -46,6 +48,8 @@ export function useAcademyPortal() {
   // Parent search state
   const [searchFirst, setSearchFirst] = useState("");
   const [searchLast, setSearchLast] = useState("");
+  const [activeSearchFirst, setActiveSearchFirst] = useState("");
+  const [activeSearchLast, setActiveSearchLast] = useState("");
   const [parentKids, setParentKids] = useState<Kid[]>([]);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [parentSearchLoading, setParentSearchLoading] = useState(false);
@@ -107,23 +111,29 @@ export function useAcademyPortal() {
   // Search kids (Parent Mode)
   const handleParentSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchFirst.trim() && !searchLast.trim()) {
+    const first = searchFirst.trim();
+    const last = searchLast.trim();
+    if (!first && !last) {
       showToast("Please enter at least one name to search.", "error");
       return;
     }
 
     setParentSearchLoading(true);
     setSearchPerformed(true);
+    setActiveSearchFirst(first);
+    setActiveSearchLast(last);
     try {
       const params = new URLSearchParams();
-      if (searchFirst.trim()) params.append("firstName", searchFirst.trim());
-      if (searchLast.trim()) params.append("lastName", searchLast.trim());
+      if (first) params.append("firstName", first);
+      if (last) params.append("lastName", last);
 
       const res = await fetch(`/api/kids?${params.toString()}`);
       const json = await res.json();
 
       if (json.success) {
         setParentKids(json.data);
+        setSearchFirst("");
+        setSearchLast("");
       } else {
         showToast(json.error || "Failed to fetch search results.", "error");
       }
@@ -138,8 +148,8 @@ export function useAcademyPortal() {
   const refreshParentKids = async () => {
     try {
       const params = new URLSearchParams();
-      if (searchFirst.trim()) params.append("firstName", searchFirst.trim());
-      if (searchLast.trim()) params.append("lastName", searchLast.trim());
+      if (activeSearchFirst) params.append("firstName", activeSearchFirst);
+      if (activeSearchLast) params.append("lastName", activeSearchLast);
 
       const res = await fetch(`/api/kids?${params.toString()}`);
       const json = await res.json();
@@ -231,6 +241,8 @@ export function useAcademyPortal() {
     setShowCreateKidModal,
     toast,
     showToast,
+    activeSearchFirst,
+    activeSearchLast,
     handleParentSearch,
     initiateKidAction,
     handleAuthSuccess,

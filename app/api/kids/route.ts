@@ -88,7 +88,9 @@ export async function POST(request: NextRequest) {
                 emergencyContactPhone: body.emergencyContactPhone.trim(),
                 notes: body.notes?.trim() || "",
                 checkedIn: false,
-                lastStatusChange: new Date()
+                lastStatusChange: new Date(),
+                registrationStart: body.registrationStart ? new Date(body.registrationStart) : null,
+                registrationEnd: body.registrationEnd ? new Date(body.registrationEnd) : null,
             }
         });
 

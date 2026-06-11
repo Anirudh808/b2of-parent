@@ -21,7 +21,7 @@ model Kid {
   id                    String          @id @default(uuid())
   firstName             String
   lastName              String
-  age                   Int
+  age                   Int?
   gender                String
   parentName            String
   parentEmail           String
@@ -33,6 +33,8 @@ model Kid {
   notes                 String          @default("")
   checkedIn             Boolean         @default(false)
   lastStatusChange      DateTime        @default(now())
+  registrationStart     DateTime?
+  registrationEnd       DateTime?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   logs                  CheckInOutLog[]
