@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import StatCards from "./StatCards";
 import KidTable from "./KidTable";
 import ActivityLogFeed from "./ActivityLogFeed";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Kid {
   id: string;
@@ -98,6 +100,100 @@ export default function AdminDashboardView({
     return true;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const displayedKids = React.useMemo(() => {
+    return filteredAdminKids.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [filteredAdminKids, currentPage]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredAdminKids]);
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+
+    // 1. Title/Header: "B2OF SafePass"
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(79, 70, 229); // indigo-600: #4f46e5 (RGB: 79, 70, 229)
+    doc.text("B2OF SafePass", 14, 20);
+
+    // Subtitle
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // slate-500: #64748b (RGB: 100, 116, 139)
+    doc.text("Academy Safety Portal - Registered Students Roster", 14, 26);
+
+    // 2. Current Date/Time
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    doc.setFontSize(9);
+    doc.text(`Downloaded: ${formattedDate}`, 14, 32);
+
+    // Add a horizontal line
+    doc.setDrawColor(226, 232, 240); // slate-200: #e2e8f0
+    doc.setLineWidth(0.5);
+    doc.line(14, 36, 196, 36);
+
+    // 3. Table Data
+    const tableColumn = ["Name", "Age / Gender", "Parent Details", "Authorized Pickup", "Status"];
+    const tableRows = displayedKids.map((kid) => {
+      const name = `${kid.firstName} ${kid.lastName}`;
+      const ageGender = `Age: ${kid.age || "N/A"} • ${kid.gender}`;
+      const parentDetails = `${kid.parentName}\n${kid.parentEmail}\n${kid.parentPhone}`;
+      const authPickup = kid.authorizedToPickup;
+      const status = kid.checkedIn ? "Checked In" : "Checked Out";
+
+      return [name, ageGender, parentDetails, authPickup, status];
+    });
+
+    // Generate table
+    autoTable(doc, {
+      startY: 40,
+      head: [tableColumn],
+      body: tableRows,
+      theme: "striped",
+      headStyles: {
+        fillColor: [79, 70, 229], // indigo-600
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: "bold",
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [51, 65, 85], // slate-700
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252], // slate-50
+      },
+      columnStyles: {
+        0: { cellWidth: 35 }, // Name
+        1: { cellWidth: 25 }, // Age / Gender
+        2: { cellWidth: 50 }, // Parent Details
+        3: { cellWidth: 45 }, // Authorized Pickup
+        4: { cellWidth: 25 }, // Status
+      },
+      styles: {
+        overflow: "linebreak",
+        cellPadding: 4,
+      },
+    });
+
+    // 4. Save/Download PDF
+    const fileName = `B2OF_SafePass_Roster_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}.pdf`;
+    doc.save(fileName);
+  };
+
   const filteredLogs = adminLogs.filter((log) => {
     if (!logDateFilter) return true;
     const logDate = new Date(log.timestamp);
@@ -144,9 +240,7 @@ export default function AdminDashboardView({
         </button>
       </div>
 
-      {/* Split Screen / Tabbed Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Kids Listing */}
         <div className={`lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl overflow-hidden flex-col ${
           activeTab === "students" ? "flex" : "hidden md:flex"
         }`}>
@@ -173,6 +267,18 @@ export default function AdminDashboardView({
                   </span>
                 )}
               </button>
+
+              <button
+                onClick={downloadPDF}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-355 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-indigo-600 dark:hover:text-indigo-400"
+                title="Download PDF Roster"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Download PDF</span>
+              </button>
+
               {activeFiltersCount > 0 && (
                 <button
                   onClick={() => {
@@ -348,6 +454,8 @@ export default function AdminDashboardView({
               kids={filteredAdminKids}
               isAdmin={true}
               onViewProfile={onEditChildClick}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
             />
           )}
         </div>

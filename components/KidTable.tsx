@@ -24,15 +24,23 @@ interface KidTableProps {
   isAdmin: boolean;
   onViewProfile: (kid: Kid) => void;
   onCheckInOut?: (kid: Kid) => void;
+  currentPage?: number;
+  setCurrentPage?: (page: number) => void;
 }
 
-export default function KidTable({
-  kids,
-  isAdmin,
-  onViewProfile,
-  onCheckInOut,
-}: KidTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export default function KidTable(props: KidTableProps) {
+  const {
+    kids,
+    isAdmin,
+    onViewProfile,
+    onCheckInOut,
+    currentPage: propCurrentPage,
+    setCurrentPage: propSetCurrentPage,
+  } = props;
+
+  const [localCurrentPage, setLocalCurrentPage] = useState(1);
+  const currentPage = propCurrentPage !== undefined ? propCurrentPage : localCurrentPage;
+  const setCurrentPage = propSetCurrentPage !== undefined ? propSetCurrentPage : setLocalCurrentPage;
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -54,6 +62,7 @@ export default function KidTable({
 
   return (
     <>
+
       {/* Mobile Card Grid (Visible on mobile, hidden on tablet and larger) */}
       <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
         {displayedKids.map((kid) => (
@@ -243,9 +252,9 @@ export default function KidTable({
       {totalPages > 1 && (
         <div className="px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 bg-slate-50/25">
           <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Previous
           </button>
@@ -253,9 +262,9 @@ export default function KidTable({
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             Next
           </button>
