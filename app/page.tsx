@@ -43,6 +43,8 @@ export default function App() {
     handleEditSaveSuccess,
     handleCreateSuccess,
     setEditingKid,
+    adminPasscode,
+    parentPasscodes,
   } = useAcademyPortal();
 
   return (
@@ -176,6 +178,8 @@ export default function App() {
           setShowEditProfileModal(false);
         }}
         onSaveSuccess={handleEditSaveSuccess}
+        adminPasscode={adminPasscode}
+        parentPasscode={editingKid ? parentPasscodes[editingKid.parentEmail] : undefined}
       />
 
       {/* Admin Create Kid Modal */}
@@ -183,6 +187,7 @@ export default function App() {
         isOpen={showCreateKidModal}
         onClose={() => setShowCreateKidModal(false)}
         onCreateSuccess={handleCreateSuccess}
+        adminPasscode={adminPasscode}
       />
 
     </div>

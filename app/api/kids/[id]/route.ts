@@ -1,5 +1,36 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { hashPasscode } from "@/app/api/auth/verify-otp-set-passcode/route";
+
+// Helper function to verify authorization
+async function verifyAccess(request: NextRequest, parentEmail: string) {
+    const adminPasscode = request.headers.get("x-admin-passcode")?.trim();
+    const parentPasscode = request.headers.get("x-parent-passcode")?.trim();
+
+    // 1. Check if administrator
+    if (adminPasscode) {
+        const adminUser = await prisma.adminUser.findFirst({
+            where: { password: adminPasscode }
+        });
+        if (adminUser) {
+            return { authorized: true, isAdmin: true };
+        }
+    }
+
+    // 2. Check if authorized parent
+    if (parentPasscode && parentEmail) {
+        const normalizedEmail = parentEmail.trim().toLowerCase();
+        const record = await prisma.parentPasscode.findUnique({
+            where: { parentEmail: normalizedEmail }
+        });
+
+        if (record && record.passcode && record.passcode === hashPasscode(parentPasscode)) {
+            return { authorized: true, isAdmin: false };
+        }
+    }
+
+    return { authorized: false, isAdmin: false };
+}
 
 // Handle GET /api/kids/[id]
 export async function GET(
@@ -19,7 +50,23 @@ export async function GET(
             );
         }
 
-        return NextResponse.json({ success: true, data: kid });
+        const { authorized } = await verifyAccess(request, kid.parentEmail);
+        if (!authorized) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized. Access to this child profile is restricted." },
+                { status: 403 }
+            );
+        }
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const mappedKid = { ...kid };
+        if (mappedKid.checkedIn && new Date(mappedKid.lastStatusChange) < startOfToday) {
+            mappedKid.checkedIn = false;
+        }
+
+        return NextResponse.json({ success: true, data: mappedKid });
     } catch (error) {
         console.error("GET /api/kids/[id] error:", error);
         const errMsg = error instanceof Error ? error.message : "Failed to fetch kid profile";
@@ -71,6 +118,24 @@ export async function PUT(
                 { success: false, error: "Kid profile not found." },
                 { status: 404 }
             );
+        }
+
+        const { authorized, isAdmin } = await verifyAccess(request, existingKid.parentEmail);
+        if (!authorized) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized. Modification of this child profile is restricted." },
+                { status: 403 }
+            );
+        }
+
+        // Prevent parents from changing the registered parent email (escalation vector)
+        if (!isAdmin) {
+            if (body.parentEmail.trim().toLowerCase() !== existingKid.parentEmail.toLowerCase()) {
+                return NextResponse.json(
+                    { success: false, error: "Unauthorized. Parents are not permitted to modify the registered parent email address." },
+                    { status: 403 }
+                );
+            }
         }
 
         // Update fields

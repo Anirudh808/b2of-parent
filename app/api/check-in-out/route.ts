@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { uploadImage, getPresignedUrl } from "@/lib/s3";
 import { hashPasscode } from "../auth/verify-otp-set-passcode/route";
+import { Kid } from "@/lib/generated/prisma";
 
 export async function POST(request: NextRequest) {
     try {
@@ -61,8 +62,12 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const isForgottenCheckout = kid.checkedIn && new Date(kid.lastStatusChange) < startOfToday;
+
         // Determine action type
-        const actionType = kid.checkedIn ? "checkout" : "checkin";
+        const actionType = isForgottenCheckout ? "checkin" : (kid.checkedIn ? "checkout" : "checkin");
 
         // 4. Upload photo evidence using s3/local helper
         const filename = `${kid.firstName}_${kid.lastName}_${actionType}.jpg`;
@@ -78,27 +83,70 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 5. Update kid status and log transaction atomically
-        const [updatedKid, log] = await prisma.$transaction([
-            prisma.kid.update({
+        // 5. Update kid status and log transaction atomically using an interactive transaction with FOR UPDATE row locking
+        const [updatedKid, log, actualActionType] = await prisma.$transaction(async (tx) => {
+            // Fetch the kid using a row-level lock
+            const lockedKids = await tx.$queryRaw<Kid[]>`
+                SELECT * FROM "Kid" WHERE id = ${kidId} FOR UPDATE
+            `;
+            const currentKid = lockedKids[0];
+            if (!currentKid) {
+                throw new Error("Kid profile not found.");
+            }
+
+            const currentNow = new Date();
+            const currentStartOfToday = new Date(currentNow.getFullYear(), currentNow.getMonth(), currentNow.getDate());
+            const txIsForgottenCheckout = currentKid.checkedIn && new Date(currentKid.lastStatusChange) < currentStartOfToday;
+
+            if (txIsForgottenCheckout) {
+                // Step A: Programmatically insert a retroactive checkout log for the previous day (timestamped to closing time 18:00)
+                const lastChangeDate = new Date(currentKid.lastStatusChange);
+                const retroactiveCheckoutTime = new Date(
+                    lastChangeDate.getFullYear(),
+                    lastChangeDate.getMonth(),
+                    lastChangeDate.getDate(),
+                    18, 0, 0
+                );
+
+                await tx.checkInOutLog.create({
+                    data: {
+                        kidId: currentKid.id,
+                        kidName: `${currentKid.firstName} ${currentKid.lastName}`,
+                        parentEmail: normalizedEmail,
+                        parentName: currentKid.parentName,
+                        type: "checkout",
+                        timestamp: retroactiveCheckoutTime,
+                        photoUrl: "system-auto-checkout"
+                    }
+                });
+            }
+
+            // Recalculate status dynamically inside transaction boundary
+            const calculatedActionType = txIsForgottenCheckout ? "checkin" : (currentKid.checkedIn ? "checkout" : "checkin");
+            const newCheckedInState = txIsForgottenCheckout ? true : !currentKid.checkedIn;
+
+            const updated = await tx.kid.update({
                 where: { id: kidId },
                 data: {
-                    checkedIn: !kid.checkedIn,
+                    checkedIn: newCheckedInState,
                     lastStatusChange: new Date()
                 }
-            }),
-            prisma.checkInOutLog.create({
+            });
+
+            const createdLog = await tx.checkInOutLog.create({
                 data: {
-                    kidId: kid.id,
-                    kidName: `${kid.firstName} ${kid.lastName}`,
+                    kidId: currentKid.id,
+                    kidName: `${currentKid.firstName} ${currentKid.lastName}`,
                     parentEmail: normalizedEmail,
-                    parentName: kid.parentName,
-                    type: actionType,
+                    parentName: currentKid.parentName,
+                    type: calculatedActionType,
                     timestamp: new Date(),
                     photoUrl
                 }
-            })
-        ]);
+            });
+
+            return [updated, createdLog, calculatedActionType] as const;
+        });
 
         const presignedPhotoUrl = await getPresignedUrl(photoUrl);
         const logWithPresignedUrl = {
@@ -108,7 +156,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `Successfully ${actionType === "checkin" ? "checked in" : "checked out"} ${kid.firstName}!`,
+            message: `Successfully ${actualActionType === "checkin" ? "checked in" : "checked out"} ${kid.firstName}!`,
             data: {
                 kid: updatedKid,
                 log: logWithPresignedUrl

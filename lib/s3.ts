@@ -20,6 +20,9 @@ const hasAwsCredentials = !!(
     bucketNameVal
 );
 
+// Global S3 client instance for performance and resource reuse
+const s3Client = hasAwsCredentials ? new S3Client(s3Config) : null;
+
 /**
  * Uploads a base64 encoded webcam image either to an AWS S3 bucket 
  * or falls back to storing it locally on the server file system.
@@ -53,9 +56,8 @@ export async function uploadImage(base64Data: string, filename: string): Promise
     }
 
     // Try AWS S3 Upload if credentials and bucket are configured
-    if (hasAwsCredentials) {
+    if (hasAwsCredentials && s3Client) {
         try {
-            const s3Client = new S3Client(s3Config);
             const bucketName = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME || "";
             const cleanFilename = `${Date.now()}_${filename.replace(/\s+/g, "_")}`;
             const key = `b20f-parent/${cleanFilename}`;
@@ -115,7 +117,7 @@ export async function getPresignedUrl(photoUrl: string): Promise<string> {
         return photoUrl;
     }
 
-    if (!hasAwsCredentials) {
+    if (!hasAwsCredentials || !s3Client) {
         return photoUrl;
     }
 
@@ -123,7 +125,6 @@ export async function getPresignedUrl(photoUrl: string): Promise<string> {
         const parsedUrl = new URL(photoUrl);
         // Check if it's an S3 URL
         if (parsedUrl.hostname.includes(".amazonaws.com")) {
-            const s3Client = new S3Client(s3Config);
             const bucketName = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME || "";
             // Strip leading slash
             const key = decodeURIComponent(parsedUrl.pathname.slice(1));

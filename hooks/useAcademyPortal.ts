@@ -71,6 +71,10 @@ export function useAcademyPortal() {
   // Create Kid Profile (Admin)
   const [showCreateKidModal, setShowCreateKidModal] = useState(false);
 
+  // Passcode credentials state for route authorization
+  const [adminPasscode, setAdminPasscode] = useState<string | null>(null);
+  const [parentPasscodes, setParentPasscodes] = useState<Record<string, string>>({});
+
   // Toasts
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -80,11 +84,18 @@ export function useAcademyPortal() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = async (passcodeOverride?: string) => {
+    const code = passcodeOverride || adminPasscode;
+    if (!code) return;
+
     setAdminLoading(true);
     try {
+      const headers: Record<string, string> = {
+        "x-admin-passcode": code
+      };
+
       // 1. Fetch Kids
-      const kidsRes = await fetch("/api/kids");
+      const kidsRes = await fetch("/api/kids", { headers });
       const kidsJson = await kidsRes.json();
       if (kidsJson.success) {
         setAdminKids(kidsJson.data);
@@ -93,7 +104,7 @@ export function useAcademyPortal() {
       }
 
       // 2. Fetch Activity Logs
-      const logsRes = await fetch("/api/logs");
+      const logsRes = await fetch("/api/logs", { headers });
       const logsJson = await logsRes.json();
       if (logsJson.success) {
         setAdminLogs(logsJson.data);
@@ -168,12 +179,18 @@ export function useAcademyPortal() {
     setActiveAction(action);
   };
 
-  const handleAuthSuccess = (action: "profile" | "checkinout" | "admin") => {
-    if (action === "admin") {
+  const handleAuthSuccess = (action: "profile" | "checkinout" | "admin", verifiedPasscode?: string) => {
+    if (action === "admin" && verifiedPasscode) {
+      setAdminPasscode(verifiedPasscode);
       setCurrentRoleState("admin");
       setSelectedKid(null);
       setActiveAction(null);
-    } else if (action === "profile") {
+      fetchAdminData(verifiedPasscode);
+    } else if (action === "profile" && verifiedPasscode && selectedKid) {
+      setParentPasscodes((prev) => ({
+        ...prev,
+        [selectedKid.parentEmail]: verifiedPasscode,
+      }));
       setEditingKid(selectedKid);
       setShowEditProfileModal(true);
       setSelectedKid(null);
@@ -205,14 +222,16 @@ export function useAcademyPortal() {
     fetchAdminData();
   };
 
-  // Fetch admin data when admin tab is loaded
+  // Fetch admin data when admin tab is loaded and passcode is available
   useEffect(() => {
-    if (currentRole === "admin") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchAdminData();
+    if (currentRole === "admin" && adminPasscode) {
+      const timer = setTimeout(() => {
+        fetchAdminData();
+      }, 0);
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRole]);
+  }, [currentRole, adminPasscode]);
 
   return {
     currentRole,
@@ -248,5 +267,7 @@ export function useAcademyPortal() {
     handleAuthSuccess,
     handleEditSaveSuccess,
     handleCreateSuccess,
+    adminPasscode,
+    parentPasscodes,
   };
 }

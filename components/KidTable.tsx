@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 interface Kid {
   id: string;
@@ -43,11 +43,12 @@ export default function KidTable(props: KidTableProps) {
   const setCurrentPage = propSetCurrentPage !== undefined ? propSetCurrentPage : setLocalCurrentPage;
   const itemsPerPage = 5;
 
-  useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setCurrentPage(1);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [kids]);
+  const kidsKey = kids.map((k) => k.id).join(",");
+  const [prevKidsKey, setPrevKidsKey] = useState(kidsKey);
+  if (kidsKey !== prevKidsKey) {
+    setPrevKidsKey(kidsKey);
+    setLocalCurrentPage(1);
+  }
 
   if (kids.length === 0) {
     return (
@@ -153,7 +154,7 @@ export default function KidTable(props: KidTableProps) {
                       <span className="block text-[10px] text-slate-400 font-normal">{kid.parentEmail}</span>
                       <span className="block text-[10px] text-slate-400 font-normal">{kid.parentPhone}</span>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold max-w-[120px] truncate">
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold max-w-30 truncate">
                       {kid.authorizedToPickup}
                     </td>
                     <td className="px-6 py-4">

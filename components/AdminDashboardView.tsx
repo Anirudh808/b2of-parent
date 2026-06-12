@@ -103,13 +103,16 @@ export default function AdminDashboardView({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  const filterKey = `${adminFilter}_${genderFilter}_${selectedAges.join(",")}_${adminKids.length}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setCurrentPage(1);
+  }
+
   const displayedKids = React.useMemo(() => {
     return filteredAdminKids.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [filteredAdminKids, currentPage]);
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredAdminKids]);
 
   const downloadPDF = () => {
     const doc = new jsPDF();

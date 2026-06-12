@@ -4,12 +4,14 @@ interface CreateKidModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateSuccess: () => void;
+  adminPasscode?: string | null;
 }
 
 export default function CreateKidModal({
   isOpen,
   onClose,
   onCreateSuccess,
+  adminPasscode,
 }: CreateKidModalProps) {
   const [newKidForm, setNewKidForm] = useState({
     firstName: "",
@@ -38,9 +40,16 @@ export default function CreateKidModal({
     setCreateError("");
 
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (adminPasscode) {
+        headers["x-admin-passcode"] = adminPasscode;
+      }
+
       const res = await fetch("/api/kids", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(newKidForm),
       });
       const json = await res.json();

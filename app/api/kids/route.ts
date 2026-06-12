@@ -7,6 +7,27 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const firstName = searchParams.get("firstName")?.trim();
         const lastName = searchParams.get("lastName")?.trim();
+        const adminPasscode = request.headers.get("x-admin-passcode")?.trim();
+
+        let isAdmin = false;
+        if (adminPasscode) {
+            const adminUser = await prisma.adminUser.findFirst({
+                where: { password: adminPasscode }
+            });
+            if (adminUser) {
+                isAdmin = true;
+            }
+        }
+
+        // If not authenticated as administrator, enforce name search filters to prevent BOLA/data leak
+        if (!isAdmin) {
+            if (!firstName && !lastName) {
+                return NextResponse.json(
+                    { success: false, error: "Unauthorized. Roster requests require administrator authentication." },
+                    { status: 401 }
+                );
+            }
+        }
 
         const query: {
             firstName?: { contains: string; mode: "insensitive" };
@@ -35,7 +56,20 @@ export async function GET(request: NextRequest) {
             ],
         });
 
-        return NextResponse.json({ success: true, data: kids });
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const mappedKids = kids.map((kid) => {
+            if (kid.checkedIn && new Date(kid.lastStatusChange) < startOfToday) {
+                return {
+                    ...kid,
+                    checkedIn: false,
+                };
+            }
+            return kid;
+        });
+
+        return NextResponse.json({ success: true, data: mappedKids });
     } catch (error) {
         console.error("GET /api/kids error:", error);
         const errMsg = error instanceof Error ? error.message : "Failed to fetch kids";
@@ -49,6 +83,26 @@ export async function GET(request: NextRequest) {
 // Handle POST requests: Create a new kid profile (Admin)
 export async function POST(request: NextRequest) {
     try {
+        const adminPasscode = request.headers.get("x-admin-passcode")?.trim();
+
+        if (!adminPasscode) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized. Administrator credentials are required." },
+                { status: 401 }
+            );
+        }
+
+        const adminUser = await prisma.adminUser.findFirst({
+            where: { password: adminPasscode }
+        });
+
+        if (!adminUser) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized. Invalid administrator passcode." },
+                { status: 403 }
+            );
+        }
+
         const body = await request.json();
 
         // Validate required fields

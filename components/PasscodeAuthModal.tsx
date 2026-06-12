@@ -25,7 +25,7 @@ interface PasscodeAuthModalProps {
   selectedKid: Kid | null;
   activeAction: "profile" | "checkinout" | "admin" | null;
   onClose: () => void;
-  onSuccess: (action: "profile" | "checkinout" | "admin") => void;
+  onSuccess: (action: "profile" | "checkinout" | "admin", verifiedPasscode?: string) => void;
   showToast: (message: string, type?: "success" | "error") => void;
 }
 
@@ -280,7 +280,7 @@ export default function PasscodeAuthModal({
         const json = await res.json();
 
         if (json.success) {
-          onSuccess("admin");
+          onSuccess("admin", pin);
         } else {
           setShakeKeypad(true);
           setTimeout(() => setShakeKeypad(false), 500);
@@ -310,7 +310,7 @@ export default function PasscodeAuthModal({
 
       if (json.success) {
         if (activeAction === "profile") {
-          onSuccess("profile");
+          onSuccess("profile", pin);
         } else if (activeAction === "checkinout") {
           await executeCheckInOut(pin);
         }

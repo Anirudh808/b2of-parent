@@ -24,6 +24,8 @@ interface KidProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveSuccess: () => void;
+  adminPasscode?: string | null;
+  parentPasscode?: string;
 }
 
 export default function KidProfileModal({
@@ -31,6 +33,8 @@ export default function KidProfileModal({
   isOpen,
   onClose,
   onSaveSuccess,
+  adminPasscode,
+  parentPasscode,
 }: KidProfileModalProps) {
   const [editingKid, setEditingKid] = useState<Partial<Kid>>({});
   const [editLoading, setEditLoading] = useState(false);
@@ -83,9 +87,18 @@ export default function KidProfileModal({
     setEditError("");
 
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (adminPasscode) {
+        headers["x-admin-passcode"] = adminPasscode;
+      } else if (parentPasscode) {
+        headers["x-parent-passcode"] = parentPasscode;
+      }
+
       const res = await fetch(`/api/kids/${editingKid.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(editingKid)
       });
       const json = await res.json();

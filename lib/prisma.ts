@@ -12,7 +12,7 @@ const cleanConnectionString = (url?: string) => {
     const parsed = new URL(url);
     parsed.searchParams.delete("sslmode");
     return parsed.toString();
-  } catch (e) {
+  } catch {
     return url;
   }
 };
